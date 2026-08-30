@@ -1,13 +1,54 @@
 import Loan from "../models/Loan.js";
 import { calculateEMI, generateEMISchedule } from "../services/emiCalculator.js";
 import EMISchedule from "../models/EMISchedule.js";
+import { calculateCreditAssessment } from "../services/creditScoreService.js";
+
+// @desc    Pre-assess borrower credit risk (live preview)
+// @route   POST /api/loans/assess-risk
+// @access  Customer
+export const assessCreditRisk = async (req, res) => {
+  try {
+    const {
+      amount = 50000,
+      interestRate = 10.5,
+      tenure = 12,
+      monthlyIncome = 50000,
+      existingMonthlyEmi = 0,
+      employmentType = "salaried",
+      creditScoreRange = "good",
+    } = req.body;
+
+    const emi = calculateEMI(Number(amount) || 50000, Number(interestRate) || 10.5, Number(tenure) || 12);
+    const assessment = calculateCreditAssessment({
+      monthlyIncome,
+      existingMonthlyEmi,
+      requestedEmi: emi,
+      loanAmount: Number(amount),
+      tenure: Number(tenure),
+      employmentType,
+      creditScoreRange,
+    });
+
+    res.json({ emi, ...assessment });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 // @desc    Create new loan
 // @route   POST /api/loans
 // @access  Customer
 export const createLoan = async (req, res) => {
   try {
-    const { amount, interestRate, tenure } = req.body;
+    const {
+      amount,
+      interestRate,
+      tenure,
+      monthlyIncome = 50000,
+      existingMonthlyEmi = 0,
+      employmentType = "salaried",
+      creditScoreRange = "good",
+    } = req.body;
 
     // Validate required fields
     if (!amount || interestRate === undefined || !tenure) {
@@ -46,6 +87,17 @@ export const createLoan = async (req, res) => {
     const totalPayable = parseFloat((emi * tenure).toFixed(2));
     const remainingAmount = totalPayable;
 
+    // Calculate Credit Assessment
+    const creditAssessment = calculateCreditAssessment({
+      monthlyIncome: Number(monthlyIncome),
+      existingMonthlyEmi: Number(existingMonthlyEmi),
+      requestedEmi: emi,
+      loanAmount: Number(amount),
+      tenure: Number(tenure),
+      employmentType,
+      creditScoreRange,
+    });
+
     const loan = await Loan.create({
       customer: req.user._id,
       amount,
@@ -54,6 +106,7 @@ export const createLoan = async (req, res) => {
       emi,
       totalPayable,
       remainingAmount,
+      creditAssessment,
     });
 
     res.status(201).json({
@@ -66,6 +119,7 @@ export const createLoan = async (req, res) => {
       totalPayable: loan.totalPayable,
       remainingAmount: loan.remainingAmount,
       status: loan.status,
+      creditAssessment: loan.creditAssessment,
       createdAt: loan.createdAt,
     });
   } catch (error) {

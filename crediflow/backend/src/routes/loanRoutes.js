@@ -3,12 +3,14 @@ import {
   createLoan,
   updateLoanStatus,
   getLoans,
+  assessCreditRisk,
 } from "../controllers/loanController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
+router.post("/assess-risk", protect, assessCreditRisk);
 router.post("/", protect, authorizeRoles("customer"), createLoan);
 router.get("/", protect, getLoans);
 router.put(

@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd crediflow/frontend && npm install && npm run build",
+  "outputDirectory": "crediflow/frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
