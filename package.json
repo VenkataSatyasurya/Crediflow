@@ -2,9 +2,15 @@
   "name": "crediflow-root",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "build": "cd crediflow/backend && npm install",
+    "start": "node crediflow/backend/src/server.js",
     "dev:backend": "cd crediflow/backend && npm run dev",
     "dev:frontend": "cd crediflow/frontend && npm run dev",
     "install:all": "cd crediflow/backend && npm install && cd ../frontend && npm install"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
